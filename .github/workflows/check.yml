@@ -1,0 +1,18 @@
+name: Check code
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+
+jobs:
+  check_bash:
+    name: Check bash syntax
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+
+      - name: Check the bash syntax
+        run: |
+          set -e
+          bash -n build.sh

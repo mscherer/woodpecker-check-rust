@@ -1,0 +1,37 @@
+name: Build Docker image
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+  schedule:
+    - cron: '10 4 * * *'
+
+jobs:
+  build:
+    name: Build image (and upload if needed)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+      - name: Run the build
+        run: |
+          export DATE=$(date +%Y%m%d)
+
+          export IMAGE=$GITHUB_REPOSITORY
+
+          docker build . --tag $REGISTRY/$IMAGE:$DATE --tag $REGISTRY/$IMAGE:latest
+          if [[ ${GITHUB_REF} == 'refs/heads/main' &&  ${GITHUB_EVENT_NAME} == 'push' ]] || [[ ${GITHUB_EVENT_NAME} == 'schedule' ]]; then
+            echo $PASSWORD | docker login $REGISTRY -u $GITHUB_REPOSITORY_OWNER --password-stdin
+            docker push $REGISTRY/$IMAGE:latest
+            docker push $REGISTRY/$IMAGE:$DATE
+          fi;
+        env:
+          REGISTRY: ghcr.io
+          PASSWORD: ${{ secrets.GITHUB_TOKEN }}
